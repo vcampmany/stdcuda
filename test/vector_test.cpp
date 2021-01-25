@@ -2,6 +2,14 @@
 
 #include <catch2/catch.hpp>
 
+template<typename T>
+bool isDevicePointer(T* ptr)
+{
+  cudaPointerAttributes attributes;
+  cudaError_t err = cudaPointerGetAttributes(&attributes, ptr);
+  return err == cudaSuccess && attributes.type == cudaMemoryTypeDevice;
+}
+
 TEST_CASE("Vector constructors and assigment operators",
           "[vector, copy, move, constructor]")
 {
@@ -9,16 +17,14 @@ TEST_CASE("Vector constructors and assigment operators",
   SECTION("Construct from a host vector")
   {
     stdcuda::Vector<float> d_vec(h_vec);
-    cudaPointerAttributes attributes;
-    cudaError_t err = cudaPointerGetAttributes(&attributes, d_vec.data());
-    REQUIRE(err == cudaSuccess);
-    REQUIRE(attributes.type == cudaMemoryTypeDevice);
+    REQUIRE(isDevicePointer(d_vec.data()));
     REQUIRE(d_vec.size() == h_vec.size());
     REQUIRE(h_vec == d_vec.toStdVector());
 
     SECTION("Copy constructor")
     {
       stdcuda::Vector<float> d_vec_copy = d_vec;
+      REQUIRE(isDevicePointer(d_vec_copy.data()));
       REQUIRE(d_vec.data() != d_vec_copy.data());
       REQUIRE(d_vec.size() == d_vec_copy.size());
       REQUIRE(d_vec.toStdVector() == d_vec_copy.toStdVector());

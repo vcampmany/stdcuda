@@ -5,7 +5,7 @@
 
 #include <vector>
 
-#include "cudart_error.h"
+#include "cuda_exception.h"
 
 namespace stdcuda {
 
@@ -15,14 +15,19 @@ class Vector {
   explicit Vector(const std::vector<T>& vec)
       : size_(vec.size()), bytes_(vec.size() * sizeof(T))
   {
-    checkError(cudaMalloc(&ptr_, bytes_));
-    checkError(cudaMemcpy(ptr_, vec.data(), bytes_, cudaMemcpyHostToDevice));
+    cudaSuccess(cudaMalloc(&ptr_, bytes_));
+    cudaSuccess(cudaMemcpy(ptr_, vec.data(), bytes_, cudaMemcpyHostToDevice));
+  }
+
+  explicit Vector(size_t size) : size_(size), bytes_(size * sizeof(T))
+  {
+    cudaSuccess(cudaMalloc(&ptr_, bytes_));
   }
 
   Vector(const Vector<T>& vec) : size_(vec.size_), bytes_(vec.bytes_)
   {
-    checkError(cudaMalloc(&ptr_, bytes_));
-    checkError(cudaMemcpy(ptr_, vec.data(), bytes_, cudaMemcpyDeviceToDevice));
+    cudaSuccess(cudaMalloc(&ptr_, bytes_));
+    cudaSuccess(cudaMemcpy(ptr_, vec.data(), bytes_, cudaMemcpyDeviceToDevice));
   }
 
   Vector<T>& operator=(const Vector<T>& vec)
@@ -31,8 +36,8 @@ class Vector {
       cudaFree(ptr_);
       size_ = vec.size_;
       bytes_ = vec.bytes_;
-      checkError(cudaMalloc(&ptr_, bytes_));
-      checkError(
+      cudaSuccess(cudaMalloc(&ptr_, bytes_));
+      cudaSuccess(
           cudaMemcpy(ptr_, vec.data(), bytes_, cudaMemcpyDeviceToDevice));
     }
     return *this;
@@ -59,14 +64,14 @@ class Vector {
 
   ~Vector()
   {
-    checkError(cudaFree(ptr_));
+    cudaSuccess(cudaFree(ptr_));
   }
 
   std::vector<T> toStdVector()
   {
     std::vector<T> h_vec;
     h_vec.resize(size_);
-    checkError(cudaMemcpy(h_vec.data(), ptr_, bytes_, cudaMemcpyDeviceToHost));
+    cudaSuccess(cudaMemcpy(h_vec.data(), ptr_, bytes_, cudaMemcpyDeviceToHost));
     return h_vec;
   }
 
